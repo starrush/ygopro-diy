@@ -43,23 +43,19 @@ end
 function c114100029.limcon(e)
 	return Duel.GetFlagEffect(e:GetHandlerPlayer(),114100029)~=0
 end
---sp summon method 1
-function c114100029.xyzfil(c)
-	return c:IsFaceup() and not c:IsType(TYPE_TOKEN)
-end
---sp summon method 2
+
+--sp summon method2
 function c114100029.xyzfilter(c,slf)
 	return c:IsSetCard(0x221)
 	and c:IsType(TYPE_MONSTER)
-	and c:IsCanBeXyzMaterial(slf,false)
+	and c:IsCanBeXyzMaterial(slf,true)
 end
-function c114100029.xyzcon(e,c)
+function c114100029.xyzcon(e,c,og)
 	if c==nil then return true end
 	local ft=Duel.GetLocationCount(c:GetControler(),LOCATION_MZONE)
-	local ct=-ft
 	local abcount=0
 	if ft>0 and Duel.GetFieldGroupCount(c:GetControler(),0,LOCATION_MZONE,nil)>0 and Duel.IsExistingMatchingCard(c114100029.xyzfilter,c:GetControler(),LOCATION_GRAVE,0,1,nil,c) then abcount=abcount+2 end
-	if 2>ct then if Duel.CheckXyzMaterial(c,c114100029.xyzfil,3,2,2,nil) then abcount=abcount+1 end end
+	if ft>=-1 then if Duel.CheckXyzMaterial(c,nil,3,2,2,og) then abcount=abcount+1 end end
 	if abcount>0 then
 		e:SetLabel(abcount)
 		return true
@@ -68,26 +64,48 @@ function c114100029.xyzcon(e,c)
 	end
 end
 
-function c114100029.xyzop(e,tp,eg,ep,ev,re,r,rp,c)
-	local sel=e:GetLabel()
-	if sel==3 then
-		Duel.Hint(HINT_SELECTMSG,tp,aux.Stringid(114100029,2))
-		sel=Duel.SelectOption(tp,aux.Stringid(114100029,0),aux.Stringid(114100029,1))+1
-	end
-	local mg
-	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_XMATERIAL)
-	if sel==2 then
-		mg=Duel.SelectMatchingCard(tp,c114100029.xyzfilter,tp,LOCATION_GRAVE,0,1,1,nil,c)
+function c114100029.xyzop(e,tp,eg,ep,ev,re,r,rp,c,og)
+	if og then
+		c:SetMaterial(og)
+		Duel.Overlay(c,og)
 	else
-		mg=Duel.SelectXyzMaterial(tp,c,c114100029.xyzfil,3,2,2)
-	end
-	c:SetMaterial(mg)
-	Duel.Overlay(c,mg)
-	if sel==2 then
-		local e1=Effect.CreateEffect(c)
-		e1:SetType(EFFECT_TYPE_SINGLE)
-		e1:SetCode(EFFECT_CANNOT_ATTACK)
-		e1:SetReset(RESET_EVENT+0xff0000+RESET_PHASE+PHASE_END)
-		c:RegisterEffect(e1)
+		local sel=e:GetLabel()
+		if sel==3 then
+			Duel.Hint(HINT_SELECTMSG,tp,aux.Stringid(114100029,2))
+			sel=Duel.SelectOption(tp,aux.Stringid(114100029,0),aux.Stringid(114100029,1))+1
+		end
+		local mg
+		Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_XMATERIAL)
+		if sel==2 then
+			mg=Duel.SelectMatchingCard(tp,c114100029.xyzfilter,tp,LOCATION_GRAVE,0,1,1,nil,c)
+		else
+			mg=Duel.SelectXyzMaterial(tp,c,c114100029.xyzfil,3,2,2)
+		end
+		c:SetMaterial(mg)
+		Duel.Overlay(c,mg)
+		if sel==2 then
+			local e1=Effect.CreateEffect(c)
+			e1:SetType(EFFECT_TYPE_SINGLE)
+			e1:SetCode(EFFECT_CANNOT_ATTACK)
+			e1:SetReset(RESET_EVENT+0xff0000+RESET_PHASE+PHASE_END)
+			c:RegisterEffect(e1)
+		end
 	end
 end
+
+
+
+--definition
+function c114100029.xyzdef(c)
+	local tp=c:GetControler()
+	local mg=Duel.GetMatchingGroup(Card.IsCode,tp,LOCATION_EXTRA,0,nil,114100029)
+	local mgtg=mg:GetFirst()
+	if mgtg then
+		return c:IsXyzLevel(mgtg,3)
+	else
+		return c:GetLevel()==3
+	end
+end
+c114100029.xyz_filter=c114100029.xyzdef
+c114100029.xyz_count=2
+--end of definition

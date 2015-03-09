@@ -97,11 +97,37 @@ function c114000001.spop(e,tp,eg,ep,ev,re,r,rp)
 	if sc then
 		local cg=Group.FromCards(c)
 		local exmg=Group.FromCards(g1,g2)
+		local xyzlay=Group.CreateGroup()
 		--
 		sc:SetMaterial(cg)
-		if g1:GetCount()>0 then sc:SetMaterial(g1) end
-		if g2:GetCount()>0 then sc:SetMaterial(g2) end
+		if g1:GetCount()>0 then 
+			--for xyz monsters
+			local g1tc=g1:GetFirst()
+			while g1tc do
+			--get all overlay materials
+				if g1tc:IsType(TYPE_XYZ) and g1tc:IsLocation(LOCATION_MZONE) and g1tc:IsFaceup() then
+					xyzlay:Merge(g1tc:GetOverlayGroup())
+				end
+				g1tc=g1:GetNext()
+			end
+			--
+			sc:SetMaterial(g1)
+		end
+		if g2:GetCount()>0 then 
+			--for xyz monsters
+			local g2tc=g2:GetFirst()
+			while g2tc do
+			--get all overlay materials
+				if g2tc:IsType(TYPE_XYZ) and g2tc:IsLocation(LOCATION_MZONE) and g2tc:IsFaceup() then
+					xyzlay:Merge(g2tc:GetOverlayGroup())
+				end
+				g2tc=g1:GetNext()
+			end
+			--
+			sc:SetMaterial(g2)
+		end
 		--
+		if xyzlay:GetCount()>0 then Duel.SendtoGrave(xyzlay,REASON_RULE) end
 		Duel.Overlay(sc,cg)
 		if g1:GetCount()>0 then Duel.Overlay(sc,g1) end
 		if g2:GetCount()>0 then Duel.Overlay(sc,g2) end
@@ -109,3 +135,6 @@ function c114000001.spop(e,tp,eg,ep,ev,re,r,rp)
 		sc:CompleteProcedure()
 	end
 end
+--
+
+--

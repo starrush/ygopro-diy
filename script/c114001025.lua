@@ -28,11 +28,11 @@ function c114001025.initial_effect(c)
 	e2:SetOperation(c114001025.desop)
 	c:RegisterEffect(e2)
 end
-function c114001025.confilter(c,tp,rp)
+function c114001025.confilter(c,tp)
 	return c:GetPreviousControler()==tp and c:IsPreviousLocation(LOCATION_MZONE)
 end
-function c114001025.confilter2(c,tp)
-	return c:IsType(TYPE_XYZ) or c:IsLevelAbove(5)
+function c114001025.confilter2(c)
+	return ( c:IsType(TYPE_XYZ) or c:IsLevelAbove(5) ) and c:IsFaceup()
 end
 function c114001025.spcon(e,tp,eg,ep,ev,re,r,rp)
 	return eg:IsExists(c114001025.confilter,1,nil,tp) and Duel.IsExistingMatchingCard(c114001025.confilter2,tp,0,LOCATION_MZONE,1,nil) and rp~=tp

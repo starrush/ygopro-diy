@@ -45,25 +45,37 @@ function c114001037.initial_effect(c)
 	e6:SetOperation(c114001037.operation)
 	c:RegisterEffect(e6)
 end
---sp summon method 1
-function c114001037.xyzfil(c)
-	return c:IsFaceup() and not c:IsType(TYPE_TOKEN)
+--
+function c114001037.xyzfilter(c)
+	return c:IsSetCard(0x221) and ( ( c:IsFaceup() and not c:IsType(TYPE_TOKEN) ) or not c:IsLocation(LOCATION_MZONE) )
 end
---sp summom method 2
-function c114001037.xyzfilter(c,slf)
-	return c:IsSetCard(0x221)
-	and c:GetLevel()>0 
-	and c:IsFaceup()
-	and not c:IsType(TYPE_TOKEN) 
-	and c:IsCanBeXyzMaterial(slf,false)
-end
-function c114001037.xyzcon(e,c)
+function c114001037.xyzcon(e,c,og)
 	if c==nil then return true end
-	local ft=Duel.GetLocationCount(c:GetControler(),LOCATION_MZONE)
-	local ct=-ft
 	local abcount=0
-	if 3>ct then if Duel.CheckXyzMaterial(c,c114001037.xyzfil,4,3,3,nil) then abcount=abcount+1 end end
-	if 2>ct then if Duel.IsExistingMatchingCard(c114001037.xyzfilter,c:GetControler(),LOCATION_MZONE,0,2,nil,c) then abcount=abcount+2 end end
+	if Duel.GetLocationCount(c:GetControler(),LOCATION_MZONE)>=-1 then 
+		local chkct=true
+		local lvb=c114001037.lvchk(c:GetControler())
+		local mct=0 -- count suitable monsters
+		local j=0
+			for i=1,lvb do
+				j=0
+				chkct=true
+				repeat
+					if Duel.CheckXyzMaterial(c,c114001037.xyzfilter,i,j+1,j+1,og) then
+						j=j+1
+					else
+						chkct=false
+					end
+				until not chkct
+				mct=mct+j
+				if mct>=2 then break end
+			end
+		if mct>=2 then abcount=abcount+2 end
+	end
+	--if 2<=ct then return false end
+	if Duel.GetLocationCount(c:GetControler(),LOCATION_MZONE)>=-2 then
+		if Duel.CheckXyzMaterial(c,nil,4,3,3,og) then abcount=abcount+1 end 
+	end
 	if abcount>0 then
 		e:SetLabel(abcount)
 		return true
@@ -71,22 +83,42 @@ function c114001037.xyzcon(e,c)
 		return false
 	end
 end
-function c114001037.xyzop(e,tp,eg,ep,ev,re,r,rp,c)
-	local sel=e:GetLabel()
-	if sel==3 then
-		Duel.Hint(HINT_SELECTMSG,tp,aux.Stringid(114001037,2))
-		sel=Duel.SelectOption(tp,aux.Stringid(114001037,0),aux.Stringid(114001037,1))+1
-	end
-	local mg
-	Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_XMATERIAL)
-	if sel==2 then
-		mg=Duel.SelectMatchingCard(tp,c114001037.xyzfilter,tp,LOCATION_MZONE,0,2,5,nil,c)
+
+function c114001037.xyzop(e,tp,eg,ep,ev,re,r,rp,c,og)
+	if og then
+		c:SetMaterial(og)
+		Duel.Overlay(c,og)
 	else
-		mg=Duel.SelectXyzMaterial(tp,c,c114001037.xyzfil,4,3,3)
+		local mg
+		local sel=e:GetLabel()
+		if sel==3 then
+			Duel.Hint(HINT_SELECTMSG,tp,aux.Stringid(114001037,2))
+			sel=Duel.SelectOption(tp,aux.Stringid(114001037,0),aux.Stringid(114001037,1))+1
+		end
+		Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_XMATERIAL)
+		if sel==2 then
+			local ag=Duel.GetMatchingGroup(c114001037.xyzfilter,tp,LOCATION_MZONE,0,nil)
+			local pg=Group.CreateGroup()
+			local chkpg=false
+			local agtg=ag:GetFirst()
+			local lvb=c114001037.lvchk(tp)
+			while agtg do
+				chkpg=false
+				for i=1,lvb do
+					if Duel.CheckXyzMaterial(c,nil,i,1,1,Group.FromCards(agtg)) then pg:AddCard(agtg) chkpg=true end
+					if chkpg then break end
+				end
+				agtg=ag:GetNext()
+			end
+			mg=pg:Select(tp,2,pg:GetCount(),nil)
+		else
+			mg=Duel.SelectXyzMaterial(tp,c,nil,4,3,3)
+		end
+		c:SetMaterial(mg)
+		Duel.Overlay(c,mg)
 	end
-	c:SetMaterial(mg)
-	Duel.Overlay(c,mg)
 end
+--
 function c114001037.reptg(e,tp,eg,ep,ev,re,r,rp,chk)
     if chk==0 then return e:GetHandler():CheckRemoveOverlayCard(tp,1,REASON_EFFECT) end
     e:GetHandler():RemoveOverlayCard(tp,1,1,REASON_EFFECT)
@@ -116,3 +148,39 @@ function c114001037.operation(e,tp,eg,ep,ev,re,r,rp)
 		Duel.Overlay(c,Group.FromCards(tc))
 	end
 end
+
+
+
+--definition
+function c114001037.xyzdef(c)
+	local tp=c:GetControler()
+	local mg=Duel.GetMatchingGroup(Card.IsCode,tp,LOCATION_EXTRA,0,nil,114001037)
+	local mgtg=mg:GetFirst()
+	if mgtg then
+		local jud=false
+		local lvb=c114001037.lvchk(tp)
+		for i=1,lvb do
+			if i==4 then 
+				if c:IsXyzLevel(mgtg,i) then jud=true end
+			else
+				if c:IsXyzLevel(mgtg,i) and c:IsSetCard(0x221) then jud=true end
+			end
+			if jud then break end
+		end
+		return jud
+	else
+		return c:GetLevel()==4 or ( c:IsSetCard(0x221) and not c:IsType(TYPE_XYZ) )
+	end
+end
+function c114001037.lvchk(tp)
+	local lv=13
+	local lvmg=Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,0,nil)
+	if lvmg:GetCount()>0 then
+		local lvc=lvmg:GetMaxGroup(Card.GetLevel):GetFirst():GetLevel()
+		if lvc>lv then lv=lvc end
+	end
+	return lv
+end
+c114001037.xyz_filter=c114001037.xyzdef
+c114001037.xyz_count=2
+--end of definition
